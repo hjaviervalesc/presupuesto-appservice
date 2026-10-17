@@ -157,7 +157,7 @@ PAGINA_PRIVADA = """
 </html>
 """
 
-TABLE_NAME = "BudgetHistory"
+TABLE_NAME = "presupuestoHistorial"
 
 
 @lru_cache(maxsize=1)

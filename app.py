@@ -1,6 +1,6 @@
 from decimal import Decimal, InvalidOperation
 
-from flask import Flask, render_template_string, request
+from flask import Flask, redirect, render_template_string, request
 
 app = Flask(__name__)
 
@@ -85,7 +85,32 @@ PAGINA = """
         </section>
     {% endif %}
 
-    <footer>Proyecto de portfolio · Python + Flask</footer>
+    <p><a href="/privado">Abrir sección privada (inicio de sesión Microsoft)</a></p>
+    <footer>Proyecto de portfolio · Python + Flask + Microsoft Entra ID</footer>
+</main>
+</body>
+</html>
+"""
+
+PAGINA_PRIVADA = """
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sección privada</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #f1f5f9; color: #172033; margin: 0; padding: 48px 20px; }
+        main { max-width: 520px; margin: auto; padding: 32px; background: white; border-radius: 16px; box-shadow: 0 8px 30px #17203312; }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Sección privada</h1>
+    <p>Has iniciado sesión con Microsoft Entra ID.</p>
+    <p>Usuario autenticado: <strong>{{ nombre }}</strong></p>
+    <p><a href="/">Volver a la calculadora</a></p>
+    <p><a href="/.auth/logout?post_logout_redirect_uri=/">Cerrar sesión</a></p>
 </main>
 </body>
 </html>
@@ -132,3 +157,23 @@ def inicio():
         anual=anual,
         error=error,
     )
+
+
+@app.route("/privado")
+def seccion_privada():
+    # Este encabezado lo inyecta App Service Authentication (Easy Auth)
+    # después de validar la sesión de Microsoft Entra ID.
+    usuario_id = request.headers.get("X-MS-CLIENT-PRINCIPAL-ID")
+
+    if not usuario_id:
+        # La calculadora sigue siendo pública; solo esta ruta pide iniciar sesión.
+        return redirect(
+            "/.auth/login/aad?post_login_redirect_uri=/privado"
+        )
+
+    nombre = request.headers.get("X-MS-CLIENT-PRINCIPAL-NAME", "Usuario")
+    return render_template_string(PAGINA_PRIVADA, nombre=nombre)
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8000, debug=False)
